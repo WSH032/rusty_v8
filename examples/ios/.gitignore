@@ -1,0 +1,14 @@
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcshareddata/swiftpm/
+
+# Build artifacts
+*.ipa
+*.dSYM
+*.dSYM.zip
+
+# SwiftPM
+.build/
