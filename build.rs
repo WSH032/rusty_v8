@@ -197,6 +197,16 @@ fn build_binding() {
     let sdk_path = String::from_utf8(output.stdout).unwrap();
     clang_args.push("-isysroot".to_string());
     clang_args.push(sdk_path.trim().to_string());
+  } else if target_os == "ios" {
+    let output = Command::new("xcrun")
+      .args(["--sdk", "iphoneos", "--show-sdk-path"])
+      .output()
+      .unwrap();
+    let sdk_path = String::from_utf8(output.stdout).unwrap();
+    clang_args.push("-isysroot".to_string());
+    clang_args.push(sdk_path.trim().to_string());
+    let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+    clang_args.push(format!("--target={target_arch}-apple-ios"));
   } else if target_os == "linux" {
     // Add clang resource directory for builtin headers (stddef.h, etc)
     if let Ok(libclang_path) = env::var("LIBCLANG_PATH") {
@@ -351,6 +361,7 @@ fn build_v8(is_asan: bool) {
       gn_args.push(arg.to_string());
     }
   }
+
   // cross-compilation setup
   if target_arch == "aarch64" {
     gn_args.push(r#"target_cpu="arm64""#.to_string());
@@ -370,7 +381,9 @@ fn build_v8(is_asan: bool) {
 
   let target_triple = env::var("TARGET").unwrap();
   // check if the target triple describes a non-native environment
-  if target_triple != env::var("HOST").unwrap() && target_os == "android" {
+  if target_triple != env::var("HOST").unwrap()
+    && (target_os == "android" || target_os == "ios")
+  {
     let arch = if target_arch == "x86_64" {
       "x64"
     } else if target_arch == "aarch64" {
@@ -378,47 +391,82 @@ fn build_v8(is_asan: bool) {
     } else {
       "unknown"
     };
-    if target_arch == "x86_64" {
-      maybe_install_sysroot("amd64");
-    }
     gn_args.push(format!(r#"v8_target_cpu="{arch}""#).to_string());
     gn_args.push(format!(r#"target_cpu="{arch}""#).to_string());
-    gn_args.push(r#"target_os="android""#.to_string());
+    gn_args.push(format!(r#"target_os="{target_os}""#).to_string());
     gn_args.push("treat_warnings_as_errors=false".to_string());
-    gn_args.push("use_sysroot=true".to_string());
 
-    // NDK 23 and above removes libgcc entirely.
-    // https://github.com/rust-lang/rust/pull/85806
-    if !Path::new("./third_party/android_ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++").exists() {
-        assert!(Command::new("curl")
-        .arg("-L")
-        .arg("-o").arg("./third_party/android-ndk-r26c-linux.zip")
-        .arg("https://dl.google.com/android/repository/android-ndk-r26c-linux.zip")
-        .status()
-        .unwrap()
-        .success());
-
-        assert!(Command::new("unzip")
-        .arg("-d").arg("./third_party/")
-        .arg("-o")
-        .arg("-q")
-        .arg("./third_party/android-ndk-r26c-linux.zip")
-        .status()
-        .unwrap()
-        .success());
-
-        fs::rename("./third_party/android-ndk-r26c", "./third_party/android_ndk").unwrap();
-        fs::remove_file("./third_party/android-ndk-r26c-linux.zip").unwrap();
+    if target_os == "android" {
+      gn_args.push("use_sysroot=true".to_string()); // only used on Linux/ChromeOS (sysroot.gni:32)
+      let host = env::var("HOST").unwrap();
+      // Android cross-compilation runs on Linux, so we need a sysroot
+      // for building host-side tools.
+      if host.starts_with("x86_64") {
+        maybe_install_sysroot("amd64");
+      } else if host.starts_with("aarch64") {
+        maybe_install_sysroot("arm64");
       }
-    static CHROMIUM_URI: &str = "https://chromium.googlesource.com";
-    maybe_clone_repo(
-      "./third_party/android_platform",
-      &format!("{CHROMIUM_URI}/chromium/src/third_party/android_platform.git",),
-    );
-    maybe_clone_repo(
-      "./third_party/catapult",
-      &format!("{CHROMIUM_URI}/catapult.git"),
-    );
+
+      // NDK 23 and above removes libgcc entirely.
+      // https://github.com/rust-lang/rust/pull/85806
+      if !Path::new("./third_party/android_ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++").exists() {
+          assert!(Command::new("curl")
+          .arg("-L")
+          .arg("-o").arg("./third_party/android-ndk-r26c-linux.zip")
+          .arg("https://dl.google.com/android/repository/android-ndk-r26c-linux.zip")
+          .status()
+          .unwrap()
+          .success());
+
+          assert!(Command::new("unzip")
+          .arg("-d").arg("./third_party/")
+          .arg("-o")
+          .arg("-q")
+          .arg("./third_party/android-ndk-r26c-linux.zip")
+          .status()
+          .unwrap()
+          .success());
+
+          fs::rename("./third_party/android-ndk-r26c", "./third_party/android_ndk").unwrap();
+          fs::remove_file("./third_party/android-ndk-r26c-linux.zip").unwrap();
+        }
+      static CHROMIUM_URI: &str = "https://chromium.googlesource.com";
+      maybe_clone_repo(
+        "./third_party/android_platform",
+        &format!(
+          "{CHROMIUM_URI}/chromium/src/third_party/android_platform.git",
+        ),
+      );
+      maybe_clone_repo(
+        "./third_party/catapult",
+        &format!("{CHROMIUM_URI}/catapult.git"),
+      );
+    }
+
+    if target_os == "ios" {
+      // TODO: `catalyst` ?
+      let target_env = if target_triple.ends_with("-sim")
+        || target_triple == "x86_64-apple-ios"
+        || target_triple == "i386-apple-ios"
+      {
+        "simulator"
+      } else {
+        "device"
+      };
+      gn_args.push(format!(r#"target_environment="{target_env}""#));
+      gn_args.push("ios_enable_code_signing=false".to_string()); // no need to sign a static library
+      // On iOS with use_blink=false, V8 defaults to lite mode (v8.gni:148),
+      // which disables WebAssembly (v8.gni:310).
+      if env::var("CARGO_FEATURE_IOS_V8_ENABLE_WEBASSEMBLY").is_ok() {
+        gn_args.push("v8_enable_webassembly=true".to_string());
+        // iOS uses lite mode, which disables JIT compilation.
+        // Enable Drumbrake to provide a WebAssembly interpreter instead (required) .
+        gn_args.push("v8_enable_drumbrake=true".to_string());
+      }
+      if env::var("CARGO_FEATURE_IOS_CPPGC_ENABLE_CAGED_HEAP").is_err() {
+        gn_args.push("cppgc_enable_caged_heap=false".to_string());
+      }
+    }
   }
 
   if target_triple.starts_with("i686-") {
@@ -463,7 +511,9 @@ fn maybe_clone_repo(dest: &str, repo: &str) {
 }
 
 fn maybe_install_sysroot(arch: &str) {
-  let sysroot_path = format!("build/linux/debian_sid_{arch}-sysroot");
+  // NOTE: The Debian version may change across V8 releases;
+  // check install-sysroot.py for the current one.
+  let sysroot_path = format!("build/linux/debian_bullseye_{arch}-sysroot");
   if !PathBuf::from(sysroot_path).is_dir() {
     assert!(
       Command::new(python())
@@ -537,6 +587,12 @@ fn prebuilt_features_suffix() -> String {
   }
   if env::var("CARGO_FEATURE_V8_ENABLE_SANDBOX").is_ok() {
     features.push_str("_sandbox");
+  }
+  if env::var("CARGO_FEATURE_IOS_V8_ENABLE_WEBASSEMBLY").is_ok() {
+    features.push_str("_iosWasm");
+  }
+  if env::var("CARGO_FEATURE_IOS_CPPGC_ENABLE_CAGED_HEAP").is_ok() {
+    features.push_str("_iosCagedHeap");
   }
   features
 }
@@ -927,6 +983,23 @@ fn clang_download() -> PathBuf {
       .unwrap()
       .success()
   );
+
+  // The objdump package provides llvm-nm, llvm-objdump, and llvm-otool
+  // (a symlink to llvm-objdump) which are required by the iOS
+  // linker driver for TOC generation.
+  if env::var("CARGO_CFG_TARGET_OS").unwrap() == "ios" {
+    assert!(
+      Command::new(python())
+        .arg("./tools/clang/scripts/update.py")
+        .arg("--package")
+        .arg("objdump")
+        .arg("--output-dir")
+        .arg(&clang_base_path)
+        .status()
+        .unwrap()
+        .success()
+    );
+  }
   assert!(clang_base_path.exists());
   clang_base_path
 }

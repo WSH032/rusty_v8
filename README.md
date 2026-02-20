@@ -145,6 +145,14 @@ docker build --build-arg CROSS_BASE_IMAGE=ghcr.io/cross-rs/aarch64-linux-android
 V8_FROM_SOURCE=1 cross build -vv --target aarch64-linux-android
 ```
 
+For iOS builds: Unlike standard Chromium, the V8 features `v8_enable_webassembly` and `cppgc_enable_caged_heap` are disabled by default. You must enable them via the Cargo features `ios_v8_enable_webassembly` and `ios_cppgc_enable_caged_heap`.
+
+**Enabling either of these features will cause V8 to allocate over 8 GB of virtual memory.** Running on a physical device requires adding the `com.apple.developer.kernel.extended-virtual-addressing` entitlement (see https://github.com/chromium/chromium/blob/88547700c7111c05932d805609d48be9e92a4f87/docs/ios/build_instructions.md?plain=1#L241C1-L241C69), or you will get OOM error.
+
+```bash
+V8_FROM_SOURCE=1 cargo build -vv --target aarch64-apple-ios
+```
+
 The build depends on several binary tools: `gn`, `ninja` and `clang`. The tools
 will automatically be downloaded, if they are not detected in the environment.
 

@@ -11,11 +11,10 @@ import os
 import sys
 import zipfile
 import tempfile
-import http.client
+import urllib.request
 from v8_deps import Var
 from download_file import DownloadUrl
 from stat import ST_MODE
-from urllib.parse import urlparse
 
 
 def get_platform():
@@ -71,13 +70,10 @@ def DownloadAndUnpack(url, output_dir):
 
 def DownloadCIPD(package, tag, output_dir):
     def get(url):
-        parsed = urlparse(url)
-        conn = http.client.HTTPSConnection(parsed.netloc)
-        conn.request("GET", parsed.path + (f'?{parsed.query}' if parsed.query else ''), headers={"Host": parsed.netloc})
-        response = conn.getresponse()
-        if response.status != 200:
-            raise Exception(f'GET {url} returned {response.status} {response.reason}')
-        data = response.read().decode()
+        print(url)
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req) as response:
+            data = response.read().decode()
         return json.loads(data)
 
     resolved = get(RESOLVE_URL.format(package, tag))
