@@ -444,12 +444,13 @@ fn build_v8(is_asan: bool) {
     }
 
     if target_os == "ios" {
-      // TODO: `catalyst` ?
       let target_env = if target_triple.ends_with("-sim")
         || target_triple == "x86_64-apple-ios"
         || target_triple == "i386-apple-ios"
       {
         "simulator"
+      } else if target_triple.ends_with("-macabi") {
+        "catalyst"
       } else {
         "device"
       };
@@ -457,11 +458,16 @@ fn build_v8(is_asan: bool) {
       gn_args.push("ios_enable_code_signing=false".to_string()); // no need to sign a static library
       // On iOS with use_blink=false, V8 defaults to lite mode (v8.gni:148),
       // which disables WebAssembly (v8.gni:310).
+      //
+      // However, Torque sources (base.tq:1091) mistakenly reference WasmFuncRef/WasmNull,
+      // so we need to explicitly disable wasm.
       if env::var("CARGO_FEATURE_IOS_V8_ENABLE_WEBASSEMBLY").is_ok() {
         gn_args.push("v8_enable_webassembly=true".to_string());
         // iOS uses lite mode, which disables JIT compilation.
         // Enable Drumbrake to provide a WebAssembly interpreter instead (required) .
         gn_args.push("v8_enable_drumbrake=true".to_string());
+      } else {
+        gn_args.push("v8_enable_webassembly=false".to_string());
       }
       if env::var("CARGO_FEATURE_IOS_CPPGC_ENABLE_CAGED_HEAP").is_err() {
         gn_args.push("cppgc_enable_caged_heap=false".to_string());
