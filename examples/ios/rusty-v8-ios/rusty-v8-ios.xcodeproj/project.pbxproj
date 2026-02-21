@@ -250,7 +250,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\nexport PATH=\"$HOME/.cargo/bin:$PATH\"\ncd \"$SRCROOT/../../..\"  # repo root\n\nif [ \"$PLATFORM_NAME\" = \"iphonesimulator\" ]; then\n  if [ \"$ARCHS\" = \"x86_64\" ]; then\n    RUST_TARGET=\"x86_64-apple-ios\"\n  else\n    RUST_TARGET=\"aarch64-apple-ios-sim\"\n  fi\nelse\n  RUST_TARGET=\"aarch64-apple-ios\"\nfi\n\nexport V8_FROM_SOURCE=1\nif [ \"$CONFIGURATION\" = \"Release\" ]; then\n  cargo build -vv --target \"$RUST_TARGET\" -p v8-ios-bridge --release\n  LIB_DIR=\"release\"\nelse\n  cargo build -vv --target \"$RUST_TARGET\" -p v8-ios-bridge\n  LIB_DIR=\"debug\"\nfi\n\nmkdir -p \"$BUILT_PRODUCTS_DIR\"\ncp \"target/$RUST_TARGET/$LIB_DIR/libv8_bridge.a\" \"$BUILT_PRODUCTS_DIR/\"\n";
+			shellScript = "set -e\nexport PATH=\"$HOME/.cargo/bin:$PATH\"\ncd \"$SRCROOT/../../..\"  # repo root\n\nif [ \"$PLATFORM_NAME\" = \"iphonesimulator\" ]; then\n  if [ \"$ARCHS\" = \"x86_64\" ]; then\n    RUST_TARGET=\"x86_64-apple-ios\"\n  else\n    RUST_TARGET=\"aarch64-apple-ios-sim\"\n  fi\nelse\n  RUST_TARGET=\"aarch64-apple-ios\"\nfi\n\nexport V8_FROM_SOURCE=1\nif [ \"$CONFIGURATION\" = \"Release\" ]; then\n  cargo build -vv --target \"$RUST_TARGET\" -p v8-ios-bridge --release $RUSTY_V8_CARGO_FEATURE_FLAGS\n  LIB_DIR=\"release\"\nelse\n  cargo build -vv --target \"$RUST_TARGET\" -p v8-ios-bridge $RUSTY_V8_CARGO_FEATURE_FLAGS\n  LIB_DIR=\"debug\"\nfi\n\nmkdir -p \"$BUILT_PRODUCTS_DIR\"\ncp \"target/$RUST_TARGET/$LIB_DIR/libv8_bridge.a\" \"$BUILT_PRODUCTS_DIR/\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

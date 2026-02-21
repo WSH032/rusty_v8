@@ -27,25 +27,25 @@ jobs:
         !contains(github.event.pull_request.labels.*.name, 'no-fail-fast') }}
       matrix:
         config:
-          - os: macos-15-large
+          - os: ${{ github.repository == 'denoland/rusty_v8' && 'macos-15-large' || 'macos-15-intel' }}
             target: x86_64-apple-darwin
             variant: debug
             v8_enable_pointer_compression: false
             cargo: cargo
 
-          - os: macos-15-large
+          - os: ${{ github.repository == 'denoland/rusty_v8' && 'macos-15-large' || 'macos-15-intel' }}
             target: x86_64-apple-darwin
             variant: release
             v8_enable_pointer_compression: false
             cargo: cargo
 
-          - os: macos-15-large
+          - os: ${{ github.repository == 'denoland/rusty_v8' && 'macos-15-large' || 'macos-15-intel' }}
             target: x86_64-apple-darwin
             variant: debug
             v8_enable_pointer_compression: true
             cargo: cargo
 
-          - os: macos-15-large
+          - os: ${{ github.repository == 'denoland/rusty_v8' && 'macos-15-large' || 'macos-15-intel' }}
             target: x86_64-apple-darwin
             variant: release
             v8_enable_pointer_compression: true
@@ -268,6 +268,206 @@ jobs:
           name: src_binding${{ env.FEATURES_SUFFIX }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.rs
           path: target/src_binding${{ env.FEATURES_SUFFIX }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.rs
 
+  build-ios:
+    name: ${{ matrix.config.variant }} ${{ matrix.config.target }} ${{ matrix.config.features_label }}
+    runs-on: ${{ matrix.config.os }}
+    timeout-minutes: 180
+    strategy:
+      fail-fast:
+        ${{ (github.event_name == 'pull_request' || (github.ref !=
+        'refs/heads/main' && !startsWith(github.ref, 'refs/tags/'))) &&
+        !contains(github.event.pull_request.labels.*.name, 'no-fail-fast') }}
+      matrix:
+        config:
+          # --- aarch64-apple-ios (device, build only) ---
+          - os: macos-15
+            target: aarch64-apple-ios
+            variant: debug
+            cargo_feature_flags: ""
+            features_suffix: ""
+            features_label: ""
+          - os: macos-15
+            target: aarch64-apple-ios
+            variant: release
+            cargo_feature_flags: ""
+            features_suffix: ""
+            features_label: ""
+          - os: macos-15
+            target: aarch64-apple-ios
+            variant: debug
+            cargo_feature_flags: "--features ios_v8_enable_webassembly,ios_cppgc_enable_caged_heap"
+            features_suffix: "_ptrcomp_iosWasm_iosCagedHeap"
+            features_label: "wasm+caged"
+          - os: macos-15
+            target: aarch64-apple-ios
+            variant: release
+            cargo_feature_flags: "--features ios_v8_enable_webassembly,ios_cppgc_enable_caged_heap"
+            features_suffix: "_ptrcomp_iosWasm_iosCagedHeap"
+            features_label: "wasm+caged"
+
+          # --- aarch64-apple-ios-sim (simulator, testable on arm64 mac) ---
+          - os: macos-15
+            target: aarch64-apple-ios-sim
+            variant: debug
+            cargo_feature_flags: ""
+            features_suffix: ""
+            features_label: ""
+          - os: macos-15
+            target: aarch64-apple-ios-sim
+            variant: release
+            cargo_feature_flags: ""
+            features_suffix: ""
+            features_label: ""
+          - os: macos-15
+            target: aarch64-apple-ios-sim
+            variant: debug
+            cargo_feature_flags: "--features ios_v8_enable_webassembly,ios_cppgc_enable_caged_heap"
+            features_suffix: "_ptrcomp_iosWasm_iosCagedHeap"
+            features_label: "wasm+caged"
+          - os: macos-15
+            target: aarch64-apple-ios-sim
+            variant: release
+            cargo_feature_flags: "--features ios_v8_enable_webassembly,ios_cppgc_enable_caged_heap"
+            features_suffix: "_ptrcomp_iosWasm_iosCagedHeap"
+            features_label: "wasm+caged"
+
+          # --- x86_64-apple-ios (simulator, testable on x86 mac) ---
+          - os: ${{ github.repository == 'denoland/rusty_v8' && 'macos-15-large' || 'macos-15-intel' }}
+            target: x86_64-apple-ios
+            variant: debug
+            cargo_feature_flags: ""
+            features_suffix: ""
+            features_label: ""
+          - os: ${{ github.repository == 'denoland/rusty_v8' && 'macos-15-large' || 'macos-15-intel' }}
+            target: x86_64-apple-ios
+            variant: release
+            cargo_feature_flags: ""
+            features_suffix: ""
+            features_label: ""
+          - os: ${{ github.repository == 'denoland/rusty_v8' && 'macos-15-large' || 'macos-15-intel' }}
+            target: x86_64-apple-ios
+            variant: debug
+            cargo_feature_flags: "--features ios_v8_enable_webassembly,ios_cppgc_enable_caged_heap"
+            features_suffix: "_ptrcomp_iosWasm_iosCagedHeap"
+            features_label: "wasm+caged"
+          - os: ${{ github.repository == 'denoland/rusty_v8' && 'macos-15-large' || 'macos-15-intel' }}
+            target: x86_64-apple-ios
+            variant: release
+            cargo_feature_flags: "--features ios_v8_enable_webassembly,ios_cppgc_enable_caged_heap"
+            features_suffix: "_ptrcomp_iosWasm_iosCagedHeap"
+            features_label: "wasm+caged"
+
+    env:
+      V8_FROM_SOURCE: true
+      CARGO_VARIANT_FLAG: ${{ matrix.config.variant == 'release' && '--release' || '' }}
+      RUSTFLAGS: -D warnings
+
+    steps:
+      - name: Configure git
+        run: git config --global core.symlinks true
+
+      - name: Clone repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 10
+          submodules: recursive
+
+      - name: Install rust
+        uses: dsherret/rust-toolchain-file@v1
+
+      - name: Install iOS target
+        run: rustup target add ${{ matrix.config.target }}
+
+      - name: Install python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11.x
+
+      - name: Write git_submodule_status.txt
+        run: git submodule status --recursive > git_submodule_status.txt
+
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: |-
+            target/sccache
+            target/*/.*
+            target/*/build
+            target/*/deps
+          key: cargo1-${{ matrix.config.target }}-${{ matrix.config.variant }}-${{ matrix.config.features_suffix }}-${{ hashFiles('Cargo.lock', 'build.rs', 'git_submodule_status.txt') }}
+          restore-keys: cargo1-${{ matrix.config.target }}-${{ matrix.config.variant }}-${{ matrix.config.features_suffix }}-
+
+      - name: Install and start sccache
+        shell: pwsh
+        env:
+          SCCACHE_DIR: ${{ github.workspace }}/target/sccache
+          SCCACHE_CACHE_SIZE: 256M
+          SCCACHE_IDLE_TIMEOUT: 0
+        run: |
+          $version = "v0.8.2"
+          $platform = "aarch64-apple-darwin"
+          if ("${{ matrix.config.target }}" -eq "x86_64-apple-ios") {
+            $platform = "x86_64-apple-darwin"
+          }
+          $basename = "sccache-$version-$platform"
+          $url = "https://github.com/mozilla/sccache/releases/download/$version/$basename.tar.gz"
+          cd ~
+          curl -LO $url
+          tar -xzvf "$basename.tar.gz"
+          . $basename/sccache --start-server
+          echo "$(pwd)/$basename" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Build
+        env:
+          SCCACHE_IDLE_TIMEOUT: 0
+        run: cargo build --lib -vv --locked --target ${{ matrix.config.target }} ${{ env.CARGO_VARIANT_FLAG }} ${{ matrix.config.cargo_feature_flags }}
+
+      - name: Xcode test (simulator only)
+        if: matrix.config.target != 'aarch64-apple-ios'
+        env:
+          SCCACHE_IDLE_TIMEOUT: 0
+          RUSTY_V8_CARGO_FEATURE_FLAGS: ${{ matrix.config.cargo_feature_flags }}
+        run: |
+          # Determine simulator destination
+          if [ "${{ matrix.config.target }}" = "x86_64-apple-ios" ]; then
+            DEST="platform=iOS Simulator,name=iPhone 16,arch=x86_64"
+          else
+            DEST="platform=iOS Simulator,name=iPhone 16,arch=arm64"
+          fi
+
+          xcodebuild test \
+            -project examples/ios/rusty-v8-ios/rusty-v8-ios.xcodeproj \
+            -scheme rusty-v8-ios \
+            -destination "$DEST" \
+            -only-testing:rusty-v8-iosTests \
+            ENABLE_USER_SCRIPT_SANDBOXING=NO
+
+      - name: Prepare binary publish
+        run: |
+          gzip -9c target/${{ matrix.config.target }}/${{ matrix.config.variant }}/gn_out/obj/librusty_v8.a > target/librusty_v8${{ matrix.config.features_suffix }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.a.gz
+          ls -l target/librusty_v8${{ matrix.config.features_suffix }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.a.gz
+
+          cp target/${{ matrix.config.target }}/${{ matrix.config.variant }}/gn_out/src_binding.rs target/src_binding${{ matrix.config.features_suffix }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.rs
+          ls -l target/src_binding${{ matrix.config.features_suffix }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.rs
+
+      - name: Binary publish
+        uses: softprops/action-gh-release@v0.1.15
+        if: >-
+          github.repository == 'denoland/rusty_v8' &&
+          startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: |
+            target/librusty_v8${{ matrix.config.features_suffix }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.a.gz
+            target/src_binding${{ matrix.config.features_suffix }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.rs
+
+      - name: Upload CI artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: src_binding${{ matrix.config.features_suffix }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.rs
+          path: target/src_binding${{ matrix.config.features_suffix }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.rs
+
   build-asan:
     name: asan aarch64-apple-darwin
     runs-on: macos-15
@@ -480,7 +680,7 @@ jobs:
         run: cargo nextest run -v --all-targets --locked --target aarch64-pc-windows-msvc --release --no-fail-fast
 
   publish:
-    needs: [build, build-windows-arm64]
+    needs: [build, build-ios, build-windows-arm64]
     runs-on: ${{ github.repository == 'denoland/rusty_v8' && 'ubuntu-22.04-xl' || 'ubuntu-22.04' }}
     if: github.repository == 'denoland/rusty_v8' && startsWith(github.ref, 'refs/tags/')
     steps:
