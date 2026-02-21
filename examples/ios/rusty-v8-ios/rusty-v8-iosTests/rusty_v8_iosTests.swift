@@ -1,17 +1,33 @@
-//
-//  rusty_v8_iosTests.swift
-//  rusty-v8-iosTests
-//
-//  Created by bilibili on 2026/2/21.
-//
-
 import Testing
 @testable import rusty_v8_ios
 
-struct rusty_v8_iosTests {
+struct V8EngineTests {
 
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+    @Test func evalPersistentContext() {
+        let engine = V8Engine()
+        _ = engine.eval("var x = 10")
+        let result = engine.eval("x * 3")
+        #expect(result.success)
+        #expect(result.output == "30")
     }
 
+    @Test func evalSyntaxError() {
+        let engine = V8Engine()
+        let result = engine.eval("}{")
+        #expect(!result.success)
+    }
+
+    @Test func evalRuntimeError() {
+        let engine = V8Engine()
+        let result = engine.eval("undefinedVar.property")
+        #expect(!result.success)
+    }
+
+    @Test func evalResetContext() {
+        let engine = V8Engine()
+        _ = engine.eval("var y = 99")
+        engine.reset()
+        let result = engine.eval("y")
+        #expect(!result.success)
+    }
 }

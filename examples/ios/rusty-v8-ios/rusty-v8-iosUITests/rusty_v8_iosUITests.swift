@@ -1,10 +1,3 @@
-//
-//  rusty_v8_iosUITests.swift
-//  rusty-v8-iosUITests
-//
-//  Created by bilibili on 2026/2/21.
-//
-
 import XCTest
 
 final class rusty_v8_iosUITests: XCTestCase {

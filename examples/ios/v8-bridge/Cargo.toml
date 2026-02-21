@@ -1,0 +1,15 @@
+[package]
+name = "v8-ios-bridge"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "v8_bridge"
+crate-type = ["staticlib"]
+
+[dependencies]
+v8 = { path = "../../../" }
+
+[build-dependencies]
+cbindgen = "0.28"

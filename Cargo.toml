@@ -152,4 +152,4 @@ path = "benches/function.rs"
 harness = false
 
 [workspace]
-members = ["examples/android"]
+members = ["examples/android", "examples/ios/v8-bridge"]
