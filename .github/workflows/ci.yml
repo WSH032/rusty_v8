@@ -263,7 +263,13 @@ jobs:
             target/${{ env.LIB_NAME }}${{ env.FEATURES_SUFFIX }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.${{ env.LIB_EXT }}.gz
             target/src_binding${{ env.FEATURES_SUFFIX }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.rs
 
-      - name: Upload CI artifacts
+      - name: Upload CI artifact (static library)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.LIB_NAME }}${{ env.FEATURES_SUFFIX }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.${{ env.LIB_EXT }}.gz
+          path: target/${{ env.LIB_NAME }}${{ env.FEATURES_SUFFIX }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.${{ env.LIB_EXT }}.gz
+
+      - name: Upload CI artifact (src_binding)
         uses: actions/upload-artifact@v4
         with:
           name: src_binding${{ env.FEATURES_SUFFIX }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.rs
@@ -465,7 +471,13 @@ jobs:
             target/librusty_v8${{ matrix.config.features_suffix }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.a.gz
             target/src_binding${{ matrix.config.features_suffix }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.rs
 
-      - name: Upload CI artifacts
+      - name: Upload CI artifact (static library)
+        uses: actions/upload-artifact@v4
+        with:
+          name: librusty_v8${{ matrix.config.features_suffix }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.a.gz
+          path: target/librusty_v8${{ matrix.config.features_suffix }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.a.gz
+
+      - name: Upload CI artifact (src_binding)
         uses: actions/upload-artifact@v4
         with:
           name: src_binding${{ matrix.config.features_suffix }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.rs
@@ -636,7 +648,13 @@ jobs:
             target/rusty_v8_release_aarch64-pc-windows-msvc.lib.gz
             target/src_binding_release_aarch64-pc-windows-msvc.rs
 
-      - name: Upload CI artifacts
+      - name: Upload CI artifact (static library)
+        uses: actions/upload-artifact@v4
+        with:
+          name: rusty_v8_release_aarch64-pc-windows-msvc.lib.gz
+          path: target/rusty_v8_release_aarch64-pc-windows-msvc.lib.gz
+
+      - name: Upload CI artifact (src_binding)
         uses: actions/upload-artifact@v4
         with:
           name: src_binding_release_aarch64-pc-windows-msvc.rs
