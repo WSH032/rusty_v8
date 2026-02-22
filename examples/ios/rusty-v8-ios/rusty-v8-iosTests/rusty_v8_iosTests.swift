@@ -1,5 +1,5 @@
 import Testing
-@testable import rusty_v8_ios
+import rusty_v8_ios
 
 struct V8EngineTests {
 

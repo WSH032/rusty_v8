@@ -1,11 +1,11 @@
 import Foundation
 
-final class V8Engine {
+public final class V8Engine {
     private static var platformInitialized = false
 
     private var handle: UnsafeMutableRawPointer
 
-    init() {
+    public init() {
         if !V8Engine.platformInitialized {
             v8_bridge_init()
             V8Engine.platformInitialized = true
@@ -17,12 +17,12 @@ final class V8Engine {
         v8_bridge_engine_free(handle)
     }
 
-    func reset() {
+    public func reset() {
         v8_bridge_engine_free(handle)
         handle = v8_bridge_engine_new()
     }
 
-    func eval(_ code: String) -> (success: Bool, output: String) {
+    public func eval(_ code: String) -> (success: Bool, output: String) {
         let result = code.withCString { cStr in
             v8_bridge_engine_eval(handle, cStr)
         }
