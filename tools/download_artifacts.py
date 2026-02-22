@@ -25,8 +25,39 @@ import time
 import zipfile
 from typing import IO, Any, Dict, List, Optional
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+from urllib.parse import urlencode, urlparse
+from urllib.request import (
+    HTTPRedirectHandler,
+    Request,
+    build_opener,
+)
+
+
+class _StripAuthOnRedirect(HTTPRedirectHandler):
+    """Drop the Authorization header when redirecting to a different host.
+
+    GitHub's archive_download_url returns a 302 to Azure Blob Storage.
+    If the Bearer token is forwarded, Azure rejects it with 401.
+    """
+
+    def redirect_request(
+        self,
+        req: Request,
+        fp: Any,
+        code: int,
+        msg: str,
+        headers: Any,
+        newurl: str,
+    ) -> Optional[Request]:
+        new_req = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new_req is None:
+            return None
+        if urlparse(newurl).netloc != urlparse(req.full_url).netloc:
+            new_req.remove_header("Authorization")
+        return new_req
+
+
+_opener = build_opener(_StripAuthOnRedirect)
 
 
 def github_request(
@@ -47,7 +78,7 @@ def github_request(
     retry_wait: int = 5
     while True:
         try:
-            resp = urlopen(req)
+            resp = _opener.open(req)
             if output is not None:
                 while True:
                     chunk: bytes = resp.read(65536)
@@ -90,9 +121,7 @@ def write_checksum(out_path: str, value: str) -> None:
         f.write(value)
 
 
-def download_artifact(
-    download_url: str, out_path: str, token: str
-) -> None:
+def download_artifact(download_url: str, out_path: str, token: str) -> None:
     """Download a GitHub artifact zip and extract the inner file."""
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
@@ -149,8 +178,7 @@ def main() -> int:
     token: str = os.environ.get("GITHUB_TOKEN", "")
     if not token:
         print(
-            "Warning: GITHUB_TOKEN not set. "
-            "Artifact downloads require authentication.",
+            "Warning: GITHUB_TOKEN not set. Artifact downloads require authentication.",
             file=sys.stderr,
         )
 

@@ -45,6 +45,6 @@ xcodebuild test \
 Pass Cargo feature flags via the `RUSTY_V8_CARGO_FEATURE_FLAGS` environment variable:
 
 ```bash
-RUSTY_V8_CARGO_FEATURE_FLAGS="--features ios_v8_enable_webassembly,ios_cppgc_enable_caged_heap" \
+RUSTY_V8_CARGO_FEATURE_FLAGS="--features v8/ios_v8_enable_webassembly,v8/ios_cppgc_enable_caged_heap" \
   xcodebuild build ...
 ```
