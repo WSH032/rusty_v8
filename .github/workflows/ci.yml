@@ -281,10 +281,7 @@ jobs:
     runs-on: ${{ matrix.config.os }}
     timeout-minutes: 180
     strategy:
-      # fail-fast:
-      #   ${{ (github.event_name == 'pull_request' || (github.ref !=
-      #   'refs/heads/main' && !startsWith(github.ref, 'refs/tags/'))) &&
-      #   !contains(github.event.pull_request.labels.*.name, 'no-fail-fast') }}
+      fail-fast: false
       matrix:
         config:
           # --- aarch64-apple-ios (device, build only) ---
