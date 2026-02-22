@@ -266,8 +266,8 @@ jobs:
       - name: Upload CI artifact (static library)
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.LIB_NAME }}${{ env.FEATURES_SUFFIX }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.${{ env.LIB_EXT }}.gz
-          path: target/${{ env.LIB_NAME }}${{ env.FEATURES_SUFFIX }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.${{ env.LIB_EXT }}.gz
+          name: ${{ env.LIB_NAME }}${{ env.FEATURES_SUFFIX }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.${{ env.LIB_EXT }}
+          path: target/${{ matrix.config.target }}/${{ matrix.config.variant }}/gn_out/obj/${{ env.LIB_NAME }}.${{ env.LIB_EXT }}
 
       - name: Upload CI artifact (src_binding)
         uses: actions/upload-artifact@v4
@@ -474,8 +474,8 @@ jobs:
       - name: Upload CI artifact (static library)
         uses: actions/upload-artifact@v4
         with:
-          name: librusty_v8${{ matrix.config.features_suffix }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.a.gz
-          path: target/librusty_v8${{ matrix.config.features_suffix }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.a.gz
+          name: librusty_v8${{ matrix.config.features_suffix }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.a
+          path: target/${{ matrix.config.target }}/${{ matrix.config.variant }}/gn_out/obj/librusty_v8.a
 
       - name: Upload CI artifact (src_binding)
         uses: actions/upload-artifact@v4
@@ -651,8 +651,8 @@ jobs:
       - name: Upload CI artifact (static library)
         uses: actions/upload-artifact@v4
         with:
-          name: rusty_v8_release_aarch64-pc-windows-msvc.lib.gz
-          path: target/rusty_v8_release_aarch64-pc-windows-msvc.lib.gz
+          name: rusty_v8_release_aarch64-pc-windows-msvc.lib
+          path: target/aarch64-pc-windows-msvc/release/gn_out/obj/rusty_v8.lib
 
       - name: Upload CI artifact (src_binding)
         uses: actions/upload-artifact@v4

@@ -105,6 +105,19 @@ export RUSTY_V8_ARCHIVE=/path/to/custom_archive.a
 cargo build
 ```
 
+## The `RUSTY_V8_ACTION_ARTIFACTS` environment variable
+
+Download prebuilt binaries from GitHub Actions artifacts instead of GitHub
+Releases. This is useful when working with a fork that has CI builds but no
+published releases. Set it to the workflow run's artifacts API URL:
+
+```bash
+# Find the run ID from your fork's Actions tab, then:
+export RUSTY_V8_ACTION_ARTIFACTS="https://api.github.com/repos/denoland/rusty_v8/actions/runs/<RUN_ID>/artifacts"
+export GITHUB_TOKEN="ghp_..."  # optional
+cargo build
+```
+
 ## Build V8 from Source
 
 Use `V8_FROM_SOURCE=1 cargo build -vv` to build the crate completely from

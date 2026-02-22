@@ -38,9 +38,11 @@ fn main() {
     "HOST",
     "NINJA",
     "OUT_DIR",
+    "RUSTY_V8_ACTION_ARTIFACTS",
     "RUSTY_V8_ARCHIVE",
     "RUSTY_V8_MIRROR",
     "RUSTY_V8_SRC_BINDING_PATH",
+    "GITHUB_TOKEN",
     "SCCACHE",
     "V8_FORCE_DEBUG",
     "V8_FROM_SOURCE",
@@ -118,8 +120,13 @@ fn main() {
     return;
   }
 
-  print_prebuilt_src_binding_path();
+  // Download from GitHub Actions artifacts if specified
+  if let Ok(artifacts_url) = env::var("RUSTY_V8_ACTION_ARTIFACTS") {
+    download_action_artifacts(&artifacts_url);
+    return;
+  }
 
+  print_prebuilt_src_binding_path();
   download_static_lib_binaries();
 }
 
@@ -780,6 +787,62 @@ fn download_static_lib_binaries() {
   println!("cargo:rustc-link-search={}", dir.display());
 
   download_file(&url, &static_lib_path());
+}
+
+fn download_action_artifacts(artifacts_url: &str) {
+  let target = env::var("TARGET").unwrap();
+  let profile = prebuilt_profile();
+  let features = prebuilt_features_suffix();
+
+  // Expected artifact names (must match CI upload names, no .gz)
+  let lib_name = static_lib_name(&format!("{features}_{profile}_{target}"));
+  let binding_name = format!("src_binding{features}_{profile}_{target}.rs");
+
+  // Output paths — Python downloads directly to final locations
+  let lib_dir = static_lib_dir();
+  fs::create_dir_all(&lib_dir).unwrap();
+  let lib_out = static_lib_path();
+
+  let binding_dir = get_dirs().root.join("gen");
+  fs::create_dir_all(&binding_dir).unwrap();
+  let binding_out = binding_dir.join(&binding_name);
+
+  println!("Downloading from GitHub Actions artifacts: {artifacts_url}");
+  println!("  lib artifact:     {lib_name}");
+  println!("  binding artifact: {binding_name}");
+
+  let status = Command::new(python())
+    .arg("./tools/download_artifacts.py")
+    .arg("--artifacts-url")
+    .arg(artifacts_url)
+    .arg("--lib-name")
+    .arg(&lib_name)
+    .arg("--lib-out")
+    .arg(&lib_out)
+    .arg("--binding-name")
+    .arg(&binding_name)
+    .arg("--binding-out")
+    .arg(&binding_out)
+    .env("GITHUB_TOKEN", env::var("GITHUB_TOKEN").unwrap_or_default())
+    .status()
+    .expect("Failed to run tools/download_artifacts.py (is Python installed?)");
+
+  assert!(
+    status.success(),
+    "tools/download_artifacts.py failed with status {status}"
+  );
+
+  assert!(lib_out.exists(), "Downloaded lib not found: {lib_out:?}");
+  assert!(
+    binding_out.exists(),
+    "Downloaded binding not found: {binding_out:?}"
+  );
+
+  println!("cargo:rustc-link-search={}", lib_dir.display());
+  println!(
+    "cargo:rustc-env=RUSTY_V8_SRC_BINDING_PATH={}",
+    binding_out.display()
+  );
 }
 
 fn decompress_to_writer<R, W>(input: &mut R, output: &mut W) -> io::Result<()>
