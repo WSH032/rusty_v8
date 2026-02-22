@@ -428,6 +428,7 @@ jobs:
         env:
           SCCACHE_IDLE_TIMEOUT: 0
           RUSTY_V8_CARGO_FEATURE_FLAGS: ${{ matrix.config.cargo_feature_flags }}
+          XCODE_CONFIGURATION: ${{ matrix.config.variant == 'release' && 'Release' || 'Debug' }}
         run: |
           # Determine simulator destination
           if [ "${{ matrix.config.target }}" = "x86_64-apple-ios" ]; then
@@ -439,6 +440,7 @@ jobs:
           xcodebuild test \
             -project examples/ios/rusty-v8-ios/rusty-v8-ios.xcodeproj \
             -scheme rusty-v8-ios \
+            -configuration "$XCODE_CONFIGURATION" \
             -destination "$DEST" \
             -only-testing:rusty-v8-iosTests \
             ENABLE_USER_SCRIPT_SANDBOXING=NO
