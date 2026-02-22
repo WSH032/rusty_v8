@@ -302,13 +302,13 @@ jobs:
           - os: macos-15
             target: aarch64-apple-ios
             variant: debug
-            cargo_feature_flags: "--features ios_v8_enable_webassembly,ios_cppgc_enable_caged_heap"
+            cargo_feature_flags: "--features v8/ios_v8_enable_webassembly,v8/ios_cppgc_enable_caged_heap"
             features_suffix: "_ptrcomp_iosWasm_iosCagedHeap"
             features_label: "wasm+caged"
           - os: macos-15
             target: aarch64-apple-ios
             variant: release
-            cargo_feature_flags: "--features ios_v8_enable_webassembly,ios_cppgc_enable_caged_heap"
+            cargo_feature_flags: "--features v8/ios_v8_enable_webassembly,v8/ios_cppgc_enable_caged_heap"
             features_suffix: "_ptrcomp_iosWasm_iosCagedHeap"
             features_label: "wasm+caged"
 
@@ -328,13 +328,13 @@ jobs:
           - os: macos-15
             target: aarch64-apple-ios-sim
             variant: debug
-            cargo_feature_flags: "--features ios_v8_enable_webassembly,ios_cppgc_enable_caged_heap"
+            cargo_feature_flags: "--features v8/ios_v8_enable_webassembly,v8/ios_cppgc_enable_caged_heap"
             features_suffix: "_ptrcomp_iosWasm_iosCagedHeap"
             features_label: "wasm+caged"
           - os: macos-15
             target: aarch64-apple-ios-sim
             variant: release
-            cargo_feature_flags: "--features ios_v8_enable_webassembly,ios_cppgc_enable_caged_heap"
+            cargo_feature_flags: "--features v8/ios_v8_enable_webassembly,v8/ios_cppgc_enable_caged_heap"
             features_suffix: "_ptrcomp_iosWasm_iosCagedHeap"
             features_label: "wasm+caged"
 
@@ -354,13 +354,13 @@ jobs:
           - os: ${{ github.repository == 'denoland/rusty_v8' && 'macos-15-large' || 'macos-15-intel' }}
             target: x86_64-apple-ios
             variant: debug
-            cargo_feature_flags: "--features ios_v8_enable_webassembly,ios_cppgc_enable_caged_heap"
+            cargo_feature_flags: "--features v8/ios_v8_enable_webassembly,v8/ios_cppgc_enable_caged_heap"
             features_suffix: "_ptrcomp_iosWasm_iosCagedHeap"
             features_label: "wasm+caged"
           - os: ${{ github.repository == 'denoland/rusty_v8' && 'macos-15-large' || 'macos-15-intel' }}
             target: x86_64-apple-ios
             variant: release
-            cargo_feature_flags: "--features ios_v8_enable_webassembly,ios_cppgc_enable_caged_heap"
+            cargo_feature_flags: "--features v8/ios_v8_enable_webassembly,v8/ios_cppgc_enable_caged_heap"
             features_suffix: "_ptrcomp_iosWasm_iosCagedHeap"
             features_label: "wasm+caged"
 
