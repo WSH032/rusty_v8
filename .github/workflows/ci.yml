@@ -427,6 +427,19 @@ jobs:
           SCCACHE_IDLE_TIMEOUT: 0
         run: cargo build --lib -vv --locked --target ${{ matrix.config.target }} ${{ env.CARGO_VARIANT_FLAG }} ${{ matrix.config.cargo_feature_flags }}
 
+      # GitHub Actions macos-15 runners may not have iOS simulator runtimes
+      # pre-installed for the active Xcode version. Download if needed.
+      # See: https://github.com/actions/runner-images/issues/12758
+      - name: Ensure iOS Simulator runtime is available
+        if: matrix.config.target != 'aarch64-apple-ios'
+        run: |
+          if ! xcrun simctl list runtimes | grep -q '^iOS'; then
+            echo "iOS Simulator runtime not found, downloading..."
+            xcodebuild -downloadPlatform iOS
+          else
+            echo "iOS Simulator runtime already available"
+          fi
+
       - name: Xcode test (simulator only)
         if: matrix.config.target != 'aarch64-apple-ios'
         env:
