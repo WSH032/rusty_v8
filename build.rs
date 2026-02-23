@@ -205,15 +205,20 @@ fn build_binding() {
     clang_args.push("-isysroot".to_string());
     clang_args.push(sdk_path.trim().to_string());
   } else if target_os == "ios" {
+    let target_triple = env::var("TARGET").unwrap();
+    let ios_env = AppleIosEnvironment::from_target_triple(&target_triple);
     let output = Command::new("xcrun")
-      .args(["--sdk", "iphoneos", "--show-sdk-path"])
+      .args(["--sdk", ios_env.apple_sdk_name(), "--show-sdk-path"])
       .output()
       .unwrap();
     let sdk_path = String::from_utf8(output.stdout).unwrap();
     clang_args.push("-isysroot".to_string());
     clang_args.push(sdk_path.trim().to_string());
     let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
-    clang_args.push(format!("--target={target_arch}-apple-ios"));
+    clang_args.push(format!(
+      "--target={}",
+      ios_env.clang_target_triple(&target_arch)
+    ));
   } else if target_os == "linux" {
     // Add clang resource directory for builtin headers (stddef.h, etc)
     if let Ok(libclang_path) = env::var("LIBCLANG_PATH") {
@@ -451,17 +456,11 @@ fn build_v8(is_asan: bool) {
     }
 
     if target_os == "ios" {
-      let target_env = if target_triple.ends_with("-sim")
-        || target_triple == "x86_64-apple-ios"
-        || target_triple == "i386-apple-ios"
-      {
-        "simulator"
-      } else if target_triple.ends_with("-macabi") {
-        "catalyst"
-      } else {
-        "device"
-      };
-      gn_args.push(format!(r#"target_environment="{target_env}""#));
+      let ios_env = AppleIosEnvironment::from_target_triple(&target_triple);
+      gn_args.push(format!(
+        r#"target_environment="{}""#,
+        ios_env.gn_target_environment()
+      ));
       gn_args.push("ios_enable_code_signing=false".to_string()); // no need to sign a static library
       // On iOS with use_blink=false, V8 defaults to lite mode (v8.gni:148),
       // which disables WebAssembly (v8.gni:310).
@@ -1347,6 +1346,52 @@ fn env_bool(key: &str) -> bool {
     env::var(key).unwrap_or_default().as_str(),
     "true" | "1" | "yes"
   )
+}
+
+#[derive(PartialEq)]
+enum AppleIosEnvironment {
+  Simulator,
+  Device,
+  Catalyst,
+}
+
+impl AppleIosEnvironment {
+  fn from_target_triple(triple: &str) -> Self {
+    if triple.ends_with("-sim")
+      || triple == "x86_64-apple-ios"
+      || triple == "i386-apple-ios"
+    {
+      Self::Simulator
+    } else if triple.ends_with("-macabi") {
+      Self::Catalyst
+    } else {
+      Self::Device
+    }
+  }
+
+  fn gn_target_environment(&self) -> &'static str {
+    match self {
+      Self::Simulator => "simulator",
+      Self::Device => "device",
+      Self::Catalyst => "catalyst",
+    }
+  }
+
+  fn apple_sdk_name(&self) -> &'static str {
+    match self {
+      Self::Simulator => "iphonesimulator",
+      Self::Device => "iphoneos",
+      Self::Catalyst => "macosx",
+    }
+  }
+
+  fn clang_target_triple(&self, arch: &str) -> String {
+    match self {
+      Self::Device => format!("{arch}-apple-ios"),
+      Self::Simulator => format!("{arch}-apple-ios-simulator"),
+      Self::Catalyst => format!("{arch}-apple-ios-macabi"),
+    }
+  }
 }
 
 #[cfg(test)]
